@@ -296,7 +296,6 @@ const initialFormState = {
   type: 'expense',
   category: 'Food',
   date: '',
-  notes: '',
 }
 
 function AddTransactionModal({ isOpen, onClose, onAddTransaction, onUpdateTransaction, transaction }) {
@@ -319,7 +318,6 @@ function AddTransactionModal({ isOpen, onClose, onAddTransaction, onUpdateTransa
         type: transaction.isPositive ? 'income' : 'expense',
         category: transaction.category,
         date: transaction.rawDate,
-        notes: transaction.notes || '',
       })
     } else {
       setFormData(initialFormState)
@@ -359,7 +357,6 @@ function AddTransactionModal({ isOpen, onClose, onAddTransaction, onUpdateTransa
           date: formData.date,
           amount: Number(formData.amount).toFixed(2),
           isPositive: formData.type === 'income',
-          notes: formData.notes,
         }
         await onUpdateTransaction(updatedTransaction)
       } else {
@@ -482,21 +479,6 @@ function AddTransactionModal({ isOpen, onClose, onAddTransaction, onUpdateTransa
             />
             {errors.date && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.date}</p>}
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-text-secondary">
-            Notes <span className="text-text-muted">(optional)</span>
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="Add any additional details..."
-            className="mt-1.5 w-full resize-none rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text-secondary placeholder:text-text-muted focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-500/30"
-          />
         </div>
 
         {submitError && (
