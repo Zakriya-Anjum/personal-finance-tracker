@@ -11,6 +11,7 @@ import { useTransactions } from '../context/TransactionContext'
 import { useBudgets } from '../context/BudgetContext'
 import { useCurrencyFormatter } from '../context/SettingsContext'
 import { budgetConfig } from '../config/budgetConfig'
+import { filterTransactionsByPeriod } from '../utils/analyticsPeriod'
 import {
   calculateSpentForCategory,
   calculateRemainingBudget,
@@ -58,12 +59,21 @@ function Budgets() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
-  // V6.13 — the budget a delete confirmation is currently open for,
-  // same pattern as Transactions.jsx's pendingDeleteTransaction.
   const [pendingDeleteBudget, setPendingDeleteBudget] = useState(null)
 
+  // V6.14.6 — budgets are explicitly MONTHLY limits (see
+  // BudgetCategoryCard's "monthly budget" label), so "spent" must be
+  // scoped to the current calendar month rather than summed across a
+  // user's entire transaction history. filterTransactionsByPeriod
+  // already exists and is used the same way by Analytics' own period
+  // selector — reused here rather than duplicating month-filtering
+  // logic. Its 'thisMonth' case matches on a full "YYYY-MM" prefix
+  // (year + month), so it correctly excludes the same month number in
+  // a different year, not just a different month.
+  const thisMonthTransactions = filterTransactionsByPeriod(transactions, 'thisMonth')
+
   const budgetCategories = budgets.map((budget) => {
-    const spent = calculateSpentForCategory(transactions, budget.category)
+    const spent = calculateSpentForCategory(thisMonthTransactions, budget.category)
     const remaining = calculateRemainingBudget(spent, budget.limit)
     const percentage = calculatePercentageUsed(spent, budget.limit)
     const status = determineBudgetStatus(percentage)

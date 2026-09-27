@@ -307,6 +307,7 @@ import { useTransactions } from '../context/TransactionContext'
 import { useBudgets } from '../context/BudgetContext'
 import { useCurrencyFormatter } from '../context/SettingsContext'
 import { budgetConfig } from '../config/budgetConfig'
+import { filterTransactionsByPeriod } from '../utils/analyticsPeriod'
 import {
   calculateTotalIncome,
   calculateTotalExpenses,
@@ -344,8 +345,15 @@ function Dashboard() {
   const balance = calculateBalance(totalIncome, totalExpenses)
   const savingsRate = calculateSavingsRate(totalIncome, totalExpenses)
 
+  // V6.14.6 — same reasoning as Budgets.jsx: budgets are monthly
+  // limits, so the Dashboard's Budget Overview widget must scope
+  // "spent" to the current month rather than the user's entire
+  // transaction history, and must use the identical calculation path
+  // Budgets.jsx uses so the two pages never disagree with each other.
+  const thisMonthTransactions = filterTransactionsByPeriod(transactions, 'thisMonth')
+
   const budgetOverview = budgets.map((budget) => {
-    const spent = calculateSpentForCategory(transactions, budget.category)
+    const spent = calculateSpentForCategory(thisMonthTransactions, budget.category)
     const remaining = calculateRemainingBudget(spent, budget.limit)
     const percentage = calculatePercentageUsed(spent, budget.limit)
     const status = determineBudgetStatus(percentage)
