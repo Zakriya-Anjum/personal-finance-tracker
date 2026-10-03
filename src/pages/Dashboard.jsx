@@ -412,7 +412,17 @@ function Dashboard() {
     },
   ]
 
-  const recentTransactions = transactions.slice(0, 4)
+  // V6.14.6 — previously took the first 4 items of `transactions` as-is,
+  // which reflects fetch/creation order, not the transaction's actual
+  // date. A backdated entry created most recently would incorrectly
+  // appear at the top. Sorting by rawDate descending (same convention
+  // Transactions.jsx already uses for its own "Newest First" option)
+  // fixes this. A shallow copy ([...transactions]) is sorted rather
+  // than transactions itself, so the shared context array is never
+  // mutated in place.
+  const recentTransactions = [...transactions]
+    .sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate))
+    .slice(0, 4)
 
   if (isLoading) {
     return (
