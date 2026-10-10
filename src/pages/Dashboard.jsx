@@ -340,17 +340,24 @@ function Dashboard() {
   const { transactions, addTransaction, isLoading, error, refetch } = useTransactions()
   const { budgets, isLoading: isBudgetsLoading } = useBudgets()
 
-  const totalIncome = calculateTotalIncome(transactions)
-  const totalExpenses = calculateTotalExpenses(transactions)
-  const balance = calculateBalance(totalIncome, totalExpenses)
-  const savingsRate = calculateSavingsRate(totalIncome, totalExpenses)
-
-  // V6.14.6 — same reasoning as Budgets.jsx: budgets are monthly
-  // limits, so the Dashboard's Budget Overview widget must scope
-  // "spent" to the current month rather than the user's entire
-  // transaction history, and must use the identical calculation path
-  // Budgets.jsx uses so the two pages never disagree with each other.
+  // V6.14.6 — current-month transactions, declared ONCE here and shared
+  // by the Monthly Income / Monthly Expenses / Savings Rate cards and the
+  // Budget Overview widget below, so every "monthly" figure on this page
+  // is derived from the identical filtered list and can never disagree.
   const thisMonthTransactions = filterTransactionsByPeriod(transactions, 'thisMonth')
+
+  // All-time totals — used ONLY for Current Balance, whose intended
+  // meaning is the overall balance across the user's entire history.
+  const allTimeIncome = calculateTotalIncome(transactions)
+  const allTimeExpenses = calculateTotalExpenses(transactions)
+  const balance = calculateBalance(allTimeIncome, allTimeExpenses)
+
+  // Current-month totals — used by the cards explicitly labeled monthly.
+  // calculateSavingsRate already returns 0 when monthly income is 0, so a
+  // month with no income safely shows 0% rather than NaN/Infinity.
+  const monthlyIncome = calculateTotalIncome(thisMonthTransactions)
+  const monthlyExpenses = calculateTotalExpenses(thisMonthTransactions)
+  const savingsRate = calculateSavingsRate(monthlyIncome, monthlyExpenses)
 
   const budgetOverview = budgets.map((budget) => {
     const spent = calculateSpentForCategory(thisMonthTransactions, budget.category)
@@ -372,6 +379,7 @@ function Dashboard() {
     }
   })
 
+  // Spending by Category intentionally stays an ALL-TIME overview.
   const topCategories = calculateCategoryBreakdown(transactions).slice(0, 4)
 
   const summaryData = [
@@ -385,7 +393,7 @@ function Dashboard() {
     },
     {
       title: 'Monthly Income',
-      value: formatCurrency(totalIncome),
+      value: formatCurrency(monthlyIncome),
       description: 'This month, before tax',
       icon: TrendingUp,
       iconBg: 'bg-blue-50 dark:bg-blue-500/10',
@@ -393,10 +401,10 @@ function Dashboard() {
     },
     {
       title: 'Monthly Expenses',
-      value: formatCurrency(totalExpenses),
+      value: formatCurrency(monthlyExpenses),
       description:
-        totalIncome > 0
-          ? `${Math.round((totalExpenses / totalIncome) * 100)}% of income`
+        monthlyIncome > 0
+          ? `${Math.round((monthlyExpenses / monthlyIncome) * 100)}% of income`
           : 'No income recorded',
       icon: TrendingDown,
       iconBg: 'bg-rose-50 dark:bg-rose-500/10',
